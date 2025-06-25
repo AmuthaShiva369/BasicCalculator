@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Viewport meta tag for responsive design, essential for proper scaling on all devices -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Calculator</title>
+    <!-- Link to Tailwind CSS CDN for modern and responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Apply Inter font family globally for a clean and modern look */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Center the calculator vertically and horizontally */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Ensure it takes full viewport height */
+            background-color: #f3f4f6; /* Light gray background */
+        }
+
+        /* Custom styles for calculator buttons to enhance appearance and interactivity */
+        .calculator-button {
+            @apply w-16 h-16 text-2xl font-semibold rounded-lg shadow-md transition-all duration-200 ease-in-out
+                   flex justify-center items-center cursor-pointer;
+            background-color: #e5e7eb; /* Light gray button background */
+            color: #374151; /* Dark gray text color */
+        }
+
+        .calculator-button:hover {
+            @apply bg-gray-300 transform scale-105; /* Slightly darker on hover, subtle scale effect */
+        }
+
+        .operator-button {
+            @apply bg-orange-500 text-white; /* Orange background for operators */
+        }
+
+        .operator-button:hover {
+            @apply bg-orange-600; /* Darker orange on hover */
+        }
+
+        .equals-button {
+            @apply bg-blue-600 text-white; /* Blue background for equals button */
+        }
+
+        .equals-button:hover {
+            @apply bg-blue-700; /* Darker blue on hover */
+        }
+
+        .clear-button {
+            @apply bg-red-500 text-white; /* Red background for clear button */
+        }
+
+        .clear-button:hover {
+            @apply bg-red-600; /* Darker red on hover */
+        }
+
+        /* Adjust button sizing for smaller screens */
+        @media (max-width: 400px) {
+            .calculator-button {
+                width: 14vw; /* Responsive width */
+                height: 14vw; /* Responsive height */
+                font-size: 1.5rem; /* Smaller font size */
+            }
+        }
+    </style>
+</head>
+<body class="selection:bg-blue-300 selection:text-blue-900">
+    <!-- Main container for the calculator, styled with Tailwind CSS for responsiveness and aesthetics -->
+    <div id="calculator" class="bg-gray-800 p-6 rounded-2xl shadow-xl max-w-xs w-full">
+        <!-- Display area for input and results -->
+        <input type="text" id="display"
+               class="w-full h-16 text-right text-4xl font-light mb-4 p-2 bg-gray-700 text-white rounded-lg
+                      outline-none border-2 border-gray-600 focus:border-blue-500 transition-colors duration-200"
+               placeholder="0" readonly>
+
+        <!-- Button grid for the calculator layout -->
+        <div class="grid grid-cols-4 gap-3">
+            <!-- Row 1 -->
+            <button class="calculator-button" data-value="7">7</button>
+            <button class="calculator-button" data-value="8">8</button>
+            <button class="calculator-button" data-value="9">9</button>
+            <button class="calculator-button operator-button" data-value="/">/</button>
+
+            <!-- Row 2 -->
+            <button class="calculator-button" data-value="4">4</button>
+            <button class="calculator-button" data-value="5">5</button>
+            <button class="calculator-button" data-value="6">6</button>
+            <button class="calculator-button operator-button" data-value="*">*</button>
+
+            <!-- Row 3 -->
+            <button class="calculator-button" data-value="1">1</button>
+            <button class="calculator-button" data-value="2">2</button>
+            <button class="calculator-button" data-value="3">3</button>
+            <button class="calculator-button operator-button" data-value="-">-</button>
+
+            <!-- Row 4 -->
+            <button class="calculator-button clear-button" data-action="clear">C</button>
+            <button class="calculator-button" data-value="0">0</button>
+            <button class="calculator-button" data-value=".">.</button>
+            <button class="calculator-button operator-button" data-value="+">+</button>
+
+            <!-- Row 5 (Equals button spans 4 columns) -->
+            <button class="calculator-button equals-button col-span-4" data-action="equals">=</button>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // Get references to the display and calculator container
+        const display = document.getElementById('display');
+        const calculator = document.getElementById('calculator');
+
+        /**
+         * Clears the display and resets the calculator state.
+         */
+        function clearDisplay() {
+            display.value = '0'; // Set display to '0'
+        }
+
+        /**
+         * Appends a number or decimal point to the display.
+         * Prevents multiple leading zeros (e.g., 007) and multiple decimal points.
+         * @param {string} number - The digit or decimal point to append.
+         */
+        function appendNumber(number) {
+            // If display is '0' and input is not '.', replace '0' with the number
+            if (display.value === '0' && number !== '.') {
+                display.value = number;
+            }
+            // If input is '.' and display already contains '.', do nothing
+            else if (number === '.' && display.value.includes('.')) {
+                return;
+            }
+            // Otherwise, append the number
+            else {
+                display.value += number;
+            }
+        }
+
+        /**
+         * Appends an operator to the display.
+         * Replaces the last character if it's already an operator to prevent multiple consecutive operators.
+         * @param {string} operator - The operator symbol (+, -, *, /).
+         */
+        function appendOperator(operator) {
+            const lastChar = display.value.slice(-1); // Get the last character in the display
+            const operators = ['+', '-', '*', '/'];
+
+            // If the last character is an operator, replace it with the new operator
+            if (operators.includes(lastChar)) {
+                display.value = display.value.slice(0, -1) + operator;
+            }
+            // Otherwise, append the operator
+            else {
+                display.value += operator;
+            }
+        }
+
+        /**
+         * Calculates the result of the expression in the display.
+         * Uses `eval()` for simplicity to handle BODMAS/BIDMAS, but notes security implications.
+         * Implements basic error handling for division by zero and invalid expressions.
+         */
+        function calculateResult() {
+            try {
+                let expression = display.value;
+
+                // Handle division by zero explicitly
+                if (expression.includes('/0')) {
+                    display.value = 'Error: Div by Zero';
+                    return;
+                }
+
+                // Use eval() to evaluate the mathematical expression.
+                // NOTE: eval() can be a security risk if used with untrusted input,
+                // but for a simple client-side calculator with controlled input, it's a common shortcut
+                // for handling complex arithmetic expressions including order of operations (BODMAS/BIDMAS).
+                let result = eval(expression);
+
+                // Check for NaN (Not a Number) or Infinity resulting from calculations
+                if (isNaN(result) || !isFinite(result)) {
+                    display.value = 'Error';
+                } else {
+                    // Display the result, fixed to 5 decimal places to prevent floating point issues
+                    display.value = parseFloat(result.toFixed(5));
+                }
+            } catch (error) {
+                // Catch any JavaScript errors during evaluation (e.g., syntax errors)
+                display.value = 'Error';
+                console.error('Calculator Error:', error);
+            }
+        }
+
+        // Event delegation for handling button clicks within the calculator
+        calculator.addEventListener('click', (event) => {
+            const target = event.target; // The clicked element
+
+            // Check if the clicked element is a button
+            if (target.tagName === 'BUTTON') {
+                // Get the data-action attribute to determine button type (clear, equals)
+                const action = target.dataset.action;
+                // Get the data-value attribute for numbers and operators
+                const value = target.dataset.value;
+
+                if (action === 'clear') {
+                    clearDisplay();
+                } else if (action === 'equals') {
+                    calculateResult();
+                } else if (value) {
+                    // If it has a data-value, it's either a number or an operator
+                    if (['+', '-', '*', '/'].includes(value)) {
+                        appendOperator(value);
+                    } else {
+                        appendNumber(value);
+                    }
+                }
+            }
+        });
+
+        // Event listener for keyboard input
+        document.addEventListener('keydown', (event) => {
+            const key = event.key; // Get the pressed key
+
+            // Regular expression to match digits (0-9) and the decimal point
+            if (/[0-9.]/.test(key)) {
+                appendNumber(key);
+            }
+            // Regular expression to match common arithmetic operators
+            else if (['+', '-', '*', '/'].includes(key)) {
+                appendOperator(key);
+            }
+            // Handle 'Enter' key for equals
+            else if (key === 'Enter') {
+                event.preventDefault(); // Prevent default Enter behavior (e.g., form submission)
+                calculateResult();
+            }
+            // Handle 'Escape' key for clear
+            else if (key === 'Escape') {
+                clearDisplay();
+            }
+            // Handle 'Backspace' key for deleting the last character
+            else if (key === 'Backspace') {
+                if (display.value.length > 1 && display.value !== '0') {
+                    display.value = display.value.slice(0, -1);
+                } else {
+                    display.value = '0'; // If only one char or '0', reset to '0'
+                }
+            }
+        });
+
+        // Initialize the display when the page loads
+        document.addEventListener('DOMContentLoaded', clearDisplay);
+    </script>
+</body>
+</html>
